@@ -5,6 +5,8 @@
 ドローンを離陸させ、少し動かして、着陸させることができるようになりましょう。
 Telloを実際に空中で操作する、最初の一歩です！
 
+> **💡 Python初心者の方へ**: このレッスンでは `import`, `if文`, `time.sleep()` などの基本的なPython構文を使います。これらがよくわからない場合は、[Step 0: Pythonの基本](../step-0-python-basics) を先に学習することをお勧めします！
+
 ## 📝 学習内容
 
 *   ドローンの離陸（takeoff）と着陸（land）
@@ -103,15 +105,63 @@ python basic_flight.py
 6. 元の向きに戻ります
 7. 自動的に着陸します
 
-## 🔍 主要な飛行コマンドの解説
+## 🔍 コードの詳しい解説
+
+### モジュールのインポート
+
+```python
+from djitellopy import Tello
+import time
+```
+
+*   **`import time`**: `time` モジュールをインポート
+*   `time.sleep()` を使うために必要
+
+💡 **timeモジュールとは？**:
+*   時間に関する機能を提供するPython標準ライブラリ
+*   `sleep()` 関数で、指定した秒数だけプログラムを一時停止できる
+
+### バッテリーチェックと条件分岐
+
+```python
+battery = tello.get_battery()
+print(f"バッテリー残量: {battery}%")
+
+if battery < 50:
+    print("警告: バッテリー残量が少ないです。充電してください。")
+    exit()
+```
+
+*   **`if battery < 50:`**: もしバッテリーが50%未満なら
+*   **`exit()`**: プログラムを終了する
+
+💡 **if文の仕組み**:
+*   条件が真（True）のとき、インデントされた部分が実行される
+*   `<` は「より小さい」という比較演算子
+*   安全のため、バッテリーが少ないときは飛行させない
+
+**比較演算子の例**:
+```python
+battery < 50   # 50より小さい
+battery > 80   # 80より大きい
+battery <= 50  # 50以下
+battery >= 80  # 80以上
+battery == 50  # 50と等しい
+battery != 50  # 50と等しくない
+```
 
 ### 離陸と着陸
+
 ```python
 tello.takeoff()  # 離陸（自動的に約1mの高さまで上昇）
 tello.land()     # 着陸（その場に降りる）
 ```
 
+*   `takeoff()`: ドローンが自動的に安全な高さ（約1m）まで上昇
+*   `land()`: その場に着陸する
+
 ### 移動コマンド（単位: cm）
+
 ```python
 tello.move_up(x)       # 上に x cm 移動
 tello.move_down(x)     # 下に x cm 移動
@@ -121,22 +171,55 @@ tello.move_left(x)     # 左に x cm 移動
 tello.move_right(x)    # 右に x cm 移動
 ```
 
-※ xは 20〜500 の範囲で指定できます
+*   **x**: 移動距離（センチメートル）
+*   **範囲**: 20〜500 cmまで指定できます
+*   20cm未満の移動は失敗することがあります
+
+**使用例**:
+```python
+tello.move_forward(30)  # 前に30cm移動
+tello.move_up(20)       # 上に20cm移動
+```
 
 ### 回転コマンド（単位: 度）
+
 ```python
 tello.rotate_clockwise(x)          # 時計回りに x 度回転
 tello.rotate_counter_clockwise(x)  # 反時計回りに x 度回転
 ```
 
-※ xは 1〜360 の範囲で指定できます
+*   **x**: 回転角度（度数法）
+*   **範囲**: 1〜360度まで指定できます
+*   **clockwise**: 時計回りの意味
+*   **counter_clockwise**: 反時計回りの意味
 
-### 待機
+**使用例**:
+```python
+tello.rotate_clockwise(90)  # 時計回りに90度（右を向く）
+tello.rotate_counter_clockwise(180)  # 反時計回りに180度（後ろを向く）
+```
+
+### 待機（sleep）
+
 ```python
 time.sleep(2)  # 2秒待機
 ```
 
-コマンドの実行後、ドローンが安定するまで少し待つことが大切です。
+*   プログラムを指定した秒数だけ一時停止する
+*   ドローンが移動を完了するまで待つために使う
+
+💡 **なぜsleep()が必要？**:
+*   ドローンに「前に進め」と命令しても、実際に移動するには時間がかかる
+*   次の命令を出す前に、前の動作が完了するのを待つ必要がある
+*   `sleep()` を入れないと、ドローンが命令についていけなくなる
+
+**sleepの例**:
+```python
+tello.move_forward(30)
+time.sleep(2)  # 移動が完了するまで2秒待つ
+tello.move_up(20)
+time.sleep(2)  # 次の移動が完了するまで2秒待つ
+```
 
 ## 🎓 やってみよう！
 
