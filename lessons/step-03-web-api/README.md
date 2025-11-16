@@ -5,12 +5,58 @@
 FastAPIを使ってWeb APIを作り、ブラウザからドローンを操作できるようにしましょう。
 これで、Web技術とドローン制御を組み合わせることができます！
 
+> **💡 初心者の方へ**: このレッスンでは「ポート」「サーバー」「API」といった用語が出てきます。これらの基本概念については [Step 00: 環境構築](../step-00-environment-setup) の「ポートとネットワークの基本」セクションで詳しく解説していますので、先に読むことをお勧めします！
+
 ## 📝 学習内容
 
+*   Web APIとは何か（初心者向け解説）
 *   FastAPIの基本的な使い方
-*   Web APIとは何か
 *   HTTPリクエスト（GET/POST）の仕組み
+*   ポートの開き方とサーバーの起動
 *   APIエンドポイントの作成方法
+
+## 📚 Web APIって何？（初心者向け）
+
+### レストランで例えると...
+
+**Web API** は、プログラム同士が会話するための「窓口」のようなものです。
+
+レストランで考えてみましょう：
+*   **あなた（クライアント）**: 料理を注文したい人
+*   **ウェイター（API）**: 注文を聞いて、厨房に伝える人
+*   **厨房（サーバー）**: 実際に料理を作る場所
+
+1.  あなた → ウェイターに「ハンバーグください」と注文（**リクエスト**）
+2.  ウェイター → 厨房に「ハンバーグ1つ！」と伝える
+3.  厨房 → ハンバーグを作る
+4.  ウェイター → あなたにハンバーグを提供（**レスポンス**）
+
+Web APIも同じ！
+*   **ブラウザ**: 「ドローンを離陸させて」とリクエスト
+*   **API**: リクエストを受け取って、ドローンに命令を伝える
+*   **サーバー**: ドローンを実際に操作する
+*   **API**: 「離陸しました！」とレスポンスを返す
+
+### HTTPリクエストとは？
+
+**HTTP** は、ブラウザとサーバーが会話するときの「言語」です。
+
+主なリクエストの種類：
+*   **GET**: データを取得する（「見せて」）
+    *   例: バッテリー残量を確認する
+*   **POST**: データを送信する、状態を変更する（「やって」）
+    *   例: ドローンを離陸させる
+
+### エンドポイントとは？
+
+**エンドポイント** は、APIの「アドレス」です。
+
+例:
+*   `http://localhost:8000/battery` → バッテリー情報が欲しい
+*   `http://localhost:8000/takeoff` → 離陸してほしい
+*   `http://localhost:8000/land` → 着陸してほしい
+
+URLの最後の部分（`/battery`, `/takeoff` など）で、何をしたいかを指定します。
 
 ## 🔧 準備
 
@@ -20,9 +66,12 @@ FastAPIを使ってWeb APIを作り、ブラウザからドローンを操作で
 pip install fastapi uvicorn djitellopy
 ```
 
-*   `fastapi`: Web APIフレームワーク
-*   `uvicorn`: FastAPIを動かすためのサーバー
+*   `fastapi`: Web APIフレームワーク（APIを簡単に作れる道具）
+*   `uvicorn`: FastAPIを動かすためのサーバー（アプリを起動する道具）
 *   `djitellopy`: Telloを制御するライブラリ
+
+💡 **ポートについて**: このレッスンでは、ポート8000番を使います。
+ポートは、コンピュータの「出入り口」のようなもので、1つのコンピュータで複数のプログラムが同時にネットワーク通信をするときに、どのプログラムへのデータかを区別するために使います。詳しくは [Step 00](../step-00-environment-setup) を参照してください。
 
 ## 💻 サンプルコード
 
@@ -214,46 +263,128 @@ python test_api.py
 
 ## 🔍 コードの解説
 
-### FastAPIの基本
+### FastAPIアプリの作成
 
 ```python
 from fastapi import FastAPI
 app = FastAPI()
 ```
 
-FastAPIアプリケーションを作成します。これがWeb APIの土台です。
+*   **`from fastapi import FastAPI`**: FastAPIライブラリからFastAPIクラスをインポート
+*   **`app = FastAPI()`**: FastAPIアプリケーションのインスタンス（実体）を作成
 
-### エンドポイントの定義
+これが、Web APIの「土台」になります。
+
+💡 **初心者向け補足**:
+*   `app` という変数に、APIアプリ全体を管理するオブジェクトが入っています
+*   この `app` に、いろんなエンドポイント（URLとその処理）を追加していきます
+
+### グローバル変数
+
+```python
+tello = None
+```
+
+*   **`tello = None`**: 最初は何も入っていない状態
+*   **グローバル変数**: プログラム全体で共有できる変数
+
+💡 **なぜグローバル変数？**:
+*   複数のエンドポイント（`/connect`, `/takeoff`, `/land` など）で、同じTelloオブジェクトを使いたい
+*   一度接続したら、その接続をずっと使い回す
+
+### デコレータとエンドポイント
 
 ```python
 @app.get("/")
 def read_root():
-    return {"message": "Hello"}
+    return {"message": "Tello API Server is running!"}
 ```
 
-*   `@app.get("/")`: GETリクエストを受け付けるエンドポイント
-*   `/`: URLのパス
-*   `return {...}`: JSON形式で返す内容
+*   **`@app.get("/")`**: デコレータ（装飾子）
+    *   「この関数は、`/` というURLへのGETリクエストを処理します」という宣言
+*   **`def read_root():`**: 実際に実行される関数
+*   **`return {...}`**: JSON形式のデータを返す
+
+💡 **デコレータって何？**:
+*   関数に「印」をつけて、特別な意味を持たせるもの
+*   `@app.get("/")` は、「この関数をルート（`/`）のGETリクエストと紐づける」という印
+
+**アクセス方法**:
+```
+http://localhost:8000/
+```
+ブラウザでこのURLを開くと、`{"message": "Tello API Server is running!"}` と表示されます。
+
+### POSTエンドポイント
 
 ```python
-@app.post("/takeoff")
-def takeoff():
-    tello.takeoff()
-    return {"status": "success"}
+@app.post("/connect")
+def connect():
+    global tello
+    try:
+        tello = Tello()
+        tello.connect()
+        battery = tello.get_battery()
+        return {"status": "connected", "battery": battery}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
 ```
 
-*   `@app.post(...)`: POSTリクエストを受け付ける
-*   状態を変更する操作（離陸、着陸など）にはPOSTを使用
+*   **`@app.post("/connect")`**: `/connect` へのPOSTリクエストを処理
+*   **`global tello`**: グローバル変数 `tello` を使うことを宣言
+*   **`try-except`**: エラーが起きても落ちないように
+
+💡 **GETとPOSTの使い分け**:
+*   **GET**: データを取得するだけ（状態は変えない）
+    *   例: バッテリー残量を確認する
+*   **POST**: 何かを実行する、状態を変える
+    *   例: ドローンを離陸させる、接続する
 
 ### パスパラメータ
 
 ```python
 @app.post("/move/{direction}/{distance}")
 def move(direction: str, distance: int):
-    # direction と distance を関数の引数として受け取れる
+    # ...
+    if direction == "up":
+        tello.move_up(distance)
+    elif direction == "down":
+        tello.move_down(distance)
+    # ...
 ```
 
-URLの一部を変数として受け取ることができます。
+*   **`{direction}`**: URLの一部を変数として受け取る
+*   **`{distance}`**: もう一つの変数
+*   **`direction: str`**: directionは文字列型
+*   **`distance: int`**: distanceは整数型
+
+**使用例**:
+```
+POST http://localhost:8000/move/forward/50
+```
+→ `direction="forward"`, `distance=50` として関数が呼ばれる
+
+💡 **初心者向け補足**:
+*   URLの一部を変数のように使える便利な機能
+*   `{変数名}` で指定し、関数の引数として受け取れる
+
+### サーバーの起動
+
+```python
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=8000)
+```
+
+*   **`if __name__ == "__main__":`**: このファイルが直接実行されたときだけ実行される
+*   **`uvicorn.run()`**: uvicornサーバーを起動する
+*   **`host="0.0.0.0"`**: すべてのネットワークインターフェースで待ち受ける
+*   **`port=8000`**: ポート8000番で待ち受ける
+
+💡 **ポートとホスト**:
+*   **ポート8000**: この「出入り口」でリクエストを待つ
+*   **host="0.0.0.0"**: すべてのIPアドレスから接続を受け付ける
+    *   `localhost` (127.0.0.1) からも、同じネットワーク内の他のPCからもアクセス可能
+*   `http://localhost:8000` でアクセスできます
 
 ## 🎓 やってみよう！
 
