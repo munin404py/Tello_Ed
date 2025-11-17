@@ -2,7 +2,7 @@
 
 ## 1. 概要
 
-`slam-ad`リポジトリは、SLAM (Simultaneous Localization and Mapping) 技術を基盤とした自動運転 (Autonomous Driving) のためのソフトウェアプロジェクトです。  
+`slam-ad`リポジトリは、SLAM (Simultaneous Localization and Mapping) 技術を基盤とした自動運転 (Autonomous Driving) のためのソフトウェアプロジェクトです。
 
 このプロジェクトは、センサーデータ（カメラ映像など）をリアルタイムで処理し、車両の自己位置を推定すると同時に、周囲の環境地図を生成する機能を提供します。
 
